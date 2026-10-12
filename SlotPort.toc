@@ -3,6 +3,7 @@
 ## Notes: SlotPort lets you export and import your action bar layouts and macros between characters — as a compact, compressed string you can share or store anywhere.
 ## Author: Nightwalker559
 ## Version: 1.2.1
+## X-Curse-Project-ID: 1535735
 ## IconTexture: Interface\AddOns\SlotPort\Media\icon
 ## SavedVariables: SlotPortDB
 ## OptionalDeps: ElvUI

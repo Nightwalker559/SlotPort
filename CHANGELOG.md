@@ -1,6 +1,8 @@
-# Changelog
+# SlotPort – Changelog
 
-## [1.2.1] - 2026-10-12
+---
+
+## 1.2.1
 
 ### New
 - Export now reports how many of the exported slots are empty, and warns when all of them are (importing empty entries only clears the target slots). Shown for `/sp export` and the Export button.
@@ -15,8 +17,11 @@
 - The bar frame for a Default UI bar is now looked up through Blizzard's `MultiActionBar_GetBarForPage` (the old frame table remains as a fallback).
 - Export treats a slot as empty when `C_ActionBar.HasAction` reports no action, e.g. leftover placeholders of deleted macros (type `macro`, id 0).
 - Fixed slot ranges (bars 1-6, bonus bars 73-132, Action Bar 6-8) checked against Blizzard's `C_ActionBar` data; no changes were needed.
+- TOC Interface versions are now 12.1.0 and 12.1.5 (12.0.7 dropped).
 
-## [1.2.0] - 2026-10-08
+---
+
+## 1.2.0
 
 ### New
 - Macro import now restores the exported icon for macros that have no `#show`/`#showtooltip` line (e.g. a manually chosen icon). Macros with `#show`/`#showtooltip` still get the default icon so it stays dynamic. If the icon can't be used, the default icon is used instead.
@@ -45,7 +50,9 @@
 ### Removed
 - `ElvUI_Skin.lua` and the bundled `AceGUI-3.0` library (only used for the old checkboxes).
 
-## [1.1.5] - 2026-09-13
+---
+
+## 1.1.5
 
 ### New
 - Form 1-4 (Default UI only) show the actual form/stance name (e.g. "Cat Form", "Prowl", "Bear Form", "Moonkin Form" for Druids, "Stealth" for Rogues) instead of a generic label, for the classes that have one on the current retail patch. Classes without a form there show "Bonus Bar 1-4" (renamed from "Form 1-4" to match Blizzard's own naming). ElvUI keeps its own plain "ElvUI 7-10" numbering regardless of class - the form name is a Default UI/Blizzard-label thing only.
@@ -93,7 +100,7 @@
 
 ---
 
-## [1.1.4] - 2026-08-08
+## 1.1.4
 
 ### New
 - Export now shows a "press Ctrl+C to copy" hint, since addons can't write to the clipboard directly.
@@ -129,14 +136,14 @@
 
 ---
 
-## [1.1.3] - 2026-07-28
+## 1.1.3
 
 ### Changed
 - Bumped TOC Interface version to 120100 for WoW patch 12.1.
 
 ---
 
-## [1.1.2] - 2026-06-23
+## 1.1.2
 
 ### New
 - "Reset Slots" button – clears selected slots, with confirmation.
@@ -160,7 +167,7 @@
 
 ---
 
-## [1.1.1] - 2026-06-20
+## 1.1.1
 
 ### New
 - Ctrl+C now auto-closes the window after copying the export text.
@@ -184,7 +191,7 @@
 
 ---
 
-## [1.1.0] - 2026-06-10
+## 1.1.0
 
 ### New
 - Compressed export format `!SP2!` (LibDeflate + base64-like encoding).
@@ -225,7 +232,7 @@
 
 ---
 
-## [1.0.4] - 2026-06-10
+## 1.0.4
 
 ### Changed
 - Export/Import merged into the main window; macro window now only handles selection.
@@ -263,7 +270,7 @@
 
 ---
 
-## [1.0.3] - 2026-06-10
+## 1.0.3
 
 ### New
 - Macro window (`/sp macros`) – export/import macro name, icon, and body independently of action bars.
@@ -285,7 +292,7 @@
 
 ---
 
-## [1.0.2] - 2026-06-02
+## 1.0.2
 
 ### New
 - `cache.lua` – shared pet spell and mount caches.
@@ -312,7 +319,7 @@
 
 ---
 
-## [1.0.1] - 2026-06-01
+## 1.0.1
 
 ### New
 - Optional ElvUI skin.
@@ -337,7 +344,7 @@
 
 ---
 
-## [1.0.0] - 2026-05-xx
+## 1.0.0
 
 ### New
 - Export and import of action bar slots (Bars 1–10, Slots 1–120).
