@@ -1,0 +1,33 @@
+## Interface: 120100, 120105
+## Title: SlotPort
+## Notes: SlotPort lets you export and import your action bar layouts and macros between characters — as a compact, compressed string you can share or store anywhere.
+## Author: Nightwalker559
+## Version: 1.2.1
+## IconTexture: Interface\AddOns\SlotPort\Media\icon
+## SavedVariables: SlotPortDB
+## OptionalDeps: ElvUI
+
+# Libraries
+Libs\LibStub\LibStub.lua
+Libs\AceDB-3.0\AceDB-3.0.lua
+
+# Localization (enUS must load first)
+Locales\enUS.lua
+Locales\deDE.lua
+
+# Core (load order: SlotPort -> Bars -> Cache)
+Core\SlotPort.lua
+Core\Bars.lua
+Core\Cache.lua
+
+# Data (macros, export, import)
+Data\Macros.lua
+Data\Export.lua
+Data\Import.lua
+
+# UI
+UI\GUI.lua
+
+# Optional diagnostics (not exposed via UI, run manually via /run when
+# troubleshooting export/import issues)
+Core\Debug.lua
