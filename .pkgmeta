@@ -1,5 +1,15 @@
 package-as: SlotPort
 
+move-folders:
+  SlotPort/SlotPort: SlotPort
+
+ignore:
+  - .github/*
+  - .gitattributes
+  - .gitignore
+  - LICENSE.md
+  - README.md
+
 manual-changelog:
   filename: CHANGELOG.md
   markup-type: markdown
