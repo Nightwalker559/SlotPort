@@ -69,4 +69,4 @@ Please report problems as a [GitHub issue](https://github.com/Nightwalker559/Slo
 
 ## License
 
-[MIT](https://github.com/Nightwalker559/SlotPort/blob/main/LICENSE), copyright Nightwalker559.
+[MIT with AI restriction](https://github.com/Nightwalker559/SlotPort/blob/main/LICENSE.md), copyright Nightwalker559.
