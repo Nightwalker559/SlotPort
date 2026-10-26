@@ -63,10 +63,10 @@ Import is not possible in combat.
 
 See the [changelog](https://github.com/Nightwalker559/SlotPort/blob/main/CHANGELOG.md).
 
-## Bugs and feedback
+## Feedback
 
-Please report problems as a [GitHub issue](https://github.com/Nightwalker559/SlotPort/issues). `/sp debug` output helps a lot for bar and slot problems.
+Found a bug or have an idea? [Open an issue on GitHub](https://github.com/Nightwalker559/SlotPort/issues). `/sp debug` output helps a lot for bar and slot problems.
 
 ## License
 
-[MIT with AI restriction](https://github.com/Nightwalker559/SlotPort/blob/main/LICENSE.md), copyright Nightwalker559.
+MIT with AI restriction (no use for AI or machine learning), see [LICENSE.md](https://github.com/Nightwalker559/SlotPort/blob/main/LICENSE.md).
