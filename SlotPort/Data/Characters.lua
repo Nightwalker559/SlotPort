@@ -147,32 +147,38 @@ end)
 
 -- Saved characters, current one first, then most recently seen. Each entry:
 -- { key, name, realm, class, seen, macroCount, specs = { { id, name, t, count, filled }, ... } }
-function SlotPort:GetSnapshotChars()
+-- onlyClass (class token, optional) keeps only characters of that class; the
+-- second return value is how many characters that filter left out.
+function SlotPort:GetSnapshotChars(onlyClass)
     local chars = charStore()
-    local result = {}
-    if not chars then return result end
+    local result, hidden = {}, 0
+    if not chars then return result, hidden end
 
     local currentKey = self:GetCurrentSnapshotKeys()
     for key, entry in pairs(chars) do
-        local specs = {}
-        for specID, spec in pairs(entry.specs or {}) do
-            specs[#specs + 1] = {
-                id = specID, name = spec.name or L("CHARS_NO_SPEC"),
-                t = spec.t, count = spec.count, filled = spec.filled,
+        if onlyClass and entry.class ~= onlyClass then
+            hidden = hidden + 1
+        else
+            local specs = {}
+            for specID, spec in pairs(entry.specs or {}) do
+                specs[#specs + 1] = {
+                    id = specID, name = spec.name or L("CHARS_NO_SPEC"),
+                    t = spec.t, count = spec.count, filled = spec.filled,
+                }
+            end
+            table.sort(specs, function(a, b) return a.name < b.name end)
+            result[#result + 1] = {
+                key = key, name = entry.name, realm = entry.realm, class = entry.class,
+                seen = entry.seen or 0, macroCount = entry.macroCount or 0, specs = specs,
             }
         end
-        table.sort(specs, function(a, b) return a.name < b.name end)
-        result[#result + 1] = {
-            key = key, name = entry.name, realm = entry.realm, class = entry.class,
-            seen = entry.seen or 0, macroCount = entry.macroCount or 0, specs = specs,
-        }
     end
     table.sort(result, function(a, b)
         if (a.key == currentKey) ~= (b.key == currentKey) then return a.key == currentKey end
         if a.seen ~= b.seen then return a.seen > b.seen end
         return a.key < b.key
     end)
-    return result
+    return result, hidden
 end
 
 -- Export string for pasting into Import: character macros first (so the slots

@@ -1099,8 +1099,28 @@ function SlotPortGUI:CreateMainFrame()
     charsHint:SetPoint("TOPRIGHT", -40, -2)
     charsHint:SetText(L("CHARS_HINT"))
 
+    -- Only characters of the current class are listed unless this is ticked
+    local showAll = CreateFrame("Button", nil, charsPage)
+    showAll:SetHeight(22)
+    showAll:SetPoint("TOPLEFT", charsHint, "BOTTOMLEFT", 0, -8)
+    showAll:SetPoint("TOPRIGHT", charsHint, "BOTTOMRIGHT", 0, -8)
+    local showAllCheck = CreateCheckMark(showAll, 16)
+    showAllCheck:SetPoint("LEFT", 0, 0)
+    local showAllText = CreateText(showAll, "SlotPortFontSmall", C.muted)
+    showAllText:SetPoint("LEFT", showAllCheck, "RIGHT", 8, 0)
+    showAllText:SetText(L("CHARS_SHOW_ALL"))
+    local showAllHidden = CreateText(showAll, "SlotPortFontSmall", C.dim)
+    showAllHidden:SetPoint("LEFT", showAllText, "RIGHT", 8, 0)
+    showAll:SetScript("OnClick", function()
+        local global = SlotPort.db.global
+        global.showAllChars = not global.showAllChars or nil
+        SlotPortCharsGUI:Rebuild()
+    end)
+    SlotPortCharsGUI.showAllCheck  = showAllCheck
+    SlotPortCharsGUI.showAllHidden = showAllHidden
+
     local charsScroll, charsContent = CreateScroll(charsPage)
-    charsScroll:SetPoint("TOPLEFT", charsHint, "BOTTOMLEFT", 0, -12)
+    charsScroll:SetPoint("TOPLEFT", showAll, "BOTTOMLEFT", 0, -8)
     charsScroll:SetPoint("BOTTOMRIGHT", charsPage, "BOTTOMRIGHT", -12, 0)
     SlotPortCharsGUI.listContent = charsContent
     SlotPortCharsGUI.scroll      = charsScroll
@@ -1475,7 +1495,13 @@ function SlotPortCharsGUI:Rebuild()
         return row
     end
 
-    for _, c in ipairs(SlotPort:GetSnapshotChars()) do
+    local showAll = SlotPort.db.global.showAllChars
+    local _, myClass = UnitClass("player")
+    local chars, hidden = SlotPort:GetSnapshotChars(not showAll and myClass or nil)
+    self.showAllCheck:SetState(showAll and "full" or "none")
+    self.showAllHidden:SetText(hidden > 0 and string.format(L("CHARS_HIDDEN"), hidden) or "")
+
+    for _, c in ipairs(chars) do
         local isCurrent = (c.key == currentKey)
         if self.expanded[c.key] == nil then self.expanded[c.key] = isCurrent end
         BindCharRow(nextRow(CHAR_ROW_H), c, isCurrent, self.expanded[c.key])
