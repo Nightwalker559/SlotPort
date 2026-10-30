@@ -6,6 +6,10 @@
 
 ### New
 - Characters page: the action bar layout of every character you log in on is saved automatically, per specialization, together with the character's own macros. Characters expand into their specializations; "Copy" opens the export string to paste into Import on a new character, so you no longer have to log into the old one first. Only characters of your current class are listed; "Show all characters" lists everyone.
+- `/sp debug spell <id>` also shows the base/override spell, the current shapeshift form and whether picking the spell up works.
+
+### Fixed
+- Spells that change with the shapeshift form (Druid: Wild Charge, Stampeding Roar) were exported as the variant of the form the character was in (cat/bear) and then reported as "not in spellbook" when imported in another form. Export now stores the base spell, and import resolves older strings to it as well.
 
 ---
 

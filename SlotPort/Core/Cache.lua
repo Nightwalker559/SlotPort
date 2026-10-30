@@ -73,6 +73,16 @@ function SlotPort.getPetSpellIndex(spellID)
     return SlotPort.petSpellCache and SlotPort.petSpellCache[spellID]
 end
 
+-- Base spell of a form/talent variant. GetActionInfo reports the variant that
+-- is active right now (cat form: Wild Charge 49376 instead of 102401), which
+-- only exists on a character while it is in that form; the spellbook and
+-- PickupSpell work with the base spell. Unchanged when the API is missing.
+function SlotPort.baseSpellID(spellID)
+    local book = C_SpellBook
+    if not (spellID and book and book.FindBaseSpellByID) then return spellID end
+    return book.FindBaseSpellByID(spellID) or spellID
+end
+
 -- Searches for a SpellID/FlyoutID/ActionID in the player's spellbook (all skill lines).
 -- Returns slotIndex or nil.
 function SlotPort.findPlayerSpellBookSlot(id)

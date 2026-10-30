@@ -80,13 +80,34 @@ function SlotPort.DebugCommand(arg)
         print("  IsPlayerSpell: " .. tostring(IsPlayerSpell and IsPlayerSpell(spellID)))
         print("  IsSpellKnown: " .. tostring(IsSpellKnown and IsSpellKnown(spellID)))
 
+        -- Base/override resolution, form, and whether picking the spell up works at all
+        local book = C_SpellBook
+        local function probe(label, fn, ...)
+            local ok, a = pcall(fn, ...)
+            print("  " .. label .. ": " .. tostring(ok and a or ("error: " .. tostring(a))))
+        end
+        if book and book.FindBaseSpellByID then probe("FindBaseSpellByID", book.FindBaseSpellByID, spellID) end
+        if book and book.FindSpellOverrideByID then probe("FindSpellOverrideByID", book.FindSpellOverrideByID, spellID) end
+        if book and book.IsSpellInSpellBook then probe("IsSpellInSpellBook", book.IsSpellInSpellBook, spellID, Enum.SpellBookSpellBank.Player, true) end
+        if GetShapeshiftForm then print("  GetShapeshiftForm: " .. tostring(GetShapeshiftForm())) end
+        if C_Spell and C_Spell.PickupSpell then
+            ClearCursor()
+            local ok, err = pcall(C_Spell.PickupSpell, spellID)
+            print("  PickupSpell -> cursor: " .. tostring(ok and GetCursorInfo() or ("error: " .. tostring(err))))
+            ClearCursor()
+        end
+
         local foundAny = false
         -- Player bank: via skill lines (correct API, see Core/Cache.lua)
         SlotPort.ForEachSpellBookItem(Enum.SpellBookSpellBank.Player, function(slot, info)
             if info.spellID == spellID or info.actionID == spellID then
                 foundAny = true
-                print(string.format("  [Player] slot=%d  itemType=%s  spellID=%s  actionID=%s  name=%s",
-                    slot, tostring(info.itemType), tostring(info.spellID), tostring(info.actionID), tostring(info.name)))
+                ClearCursor()
+                local ok = pcall(C_SpellBook.PickupSpellBookItem, slot, Enum.SpellBookSpellBank.Player)
+                local picked = ok and GetCursorInfo() or "nothing"
+                ClearCursor()
+                print(string.format("  [Player] slot=%d  itemType=%s  spellID=%s  actionID=%s  name=%s  bookPickup=%s",
+                    slot, tostring(info.itemType), tostring(info.spellID), tostring(info.actionID), tostring(info.name), tostring(picked)))
             end
             return false
         end)

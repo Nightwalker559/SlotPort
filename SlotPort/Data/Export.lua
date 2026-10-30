@@ -61,7 +61,7 @@ local function spellEntry(slot, spellID)
     if SlotPort.isPetSpell(spellID) then
         return string.format("%d:petspell:%d:", slot, spellID or 0)
     end
-    return string.format("%d:spell:%d:", slot, spellID or 0)
+    return string.format("%d:spell:%d:", slot, SlotPort.baseSpellID(spellID) or 0)
 end
 
 -- Button frame names per default-UI bar (used for single-key-assist detection).
@@ -183,7 +183,8 @@ local function exportElvUISlot(bar, buttonIndex, slot, mountCache)
         elseif SlotPort.isPetSpell(spellID) then
             return string.format("%d:petspell:%d:", slot, spellID)
         end
-        return string.format("%d:elvui_spell:%s:%d", slot, tostring(btnAction), bar.elvuiBarNum)
+        return string.format("%d:elvui_spell:%s:%d", slot,
+            tostring(SlotPort.baseSpellID(spellID) or btnAction), bar.elvuiBarNum)
 
     elseif btnType == "item" then
         local itemID = tonumber(btnAction)

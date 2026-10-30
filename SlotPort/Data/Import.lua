@@ -39,6 +39,8 @@ end
 -- spellbook search (GetNumSpellBookItemsForSpellBank is unreliable in 12.0, see
 -- SlotPort.findPlayerSpellBookSlot in Core/Cache.lua).
 local function placeSpell(slot, spellID, useSpellBookFallback)
+    -- strings exported in a shapeshift form hold that form's variant (see SlotPort.baseSpellID)
+    spellID = SlotPort.baseSpellID(spellID)
     if C_Spell and C_Spell.PickupSpell then
         C_Spell.PickupSpell(spellID)
         if placeCursor(slot) then return true end
