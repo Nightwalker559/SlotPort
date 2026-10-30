@@ -2,6 +2,13 @@
 
 ---
 
+## Unreleased
+
+### New
+- Characters page: the action bar layout of every character you log in on is saved automatically, per specialization, together with the character's own macros. Characters expand into their specializations; "Copy" opens the export string to paste into Import on a new character, so you no longer have to log into the old one first.
+
+---
+
 ## 1.2.1
 
 ### New

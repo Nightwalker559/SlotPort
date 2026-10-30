@@ -53,21 +53,26 @@ end
 -- ----------------------------------------------------------
 -- Export
 -- ----------------------------------------------------------
+-- Exports a list of macro records as returned by GetAllMacros.
+function SlotPort:ExportMacroList(list)
+    local parts = { "SLOTPORTMACRO:v1" }
+    for _, m in ipairs(list) do
+        parts[#parts + 1] = escapeName(m.name) .. ":" .. tostring(m.icon or "") .. ":" .. escapeBody(m.body) .. ":" .. m.scope
+    end
+    local written = #parts - 1
+    if written == 0 then return nil, L("NO_MACROS_SELECTED") end
+    return SlotPort.EncodeForExport(table.concat(parts, "|")), written
+end
+
 function SlotPort:ExportMacros()
     if self:GetSelectedMacroCount() == 0 then
         return nil, L("NO_MACROS_SELECTED")
     end
-    local parts   = { "SLOTPORTMACRO:v1" }
-    local written = 0
+    local list = {}
     for _, m in ipairs(self:GetAllMacros()) do
-        if self.selectedMacros[m.index] then
-            parts[#parts + 1] = escapeName(m.name) .. ":" .. tostring(m.icon or "") .. ":" .. escapeBody(m.body) .. ":" .. m.scope
-            written = written + 1
-        end
+        if self.selectedMacros[m.index] then list[#list + 1] = m end
     end
-    if written == 0 then return nil, L("NO_MACROS_SELECTED") end
-    local raw = table.concat(parts, "|")
-    return SlotPort.EncodeForExport(raw), written
+    return self:ExportMacroList(list)
 end
 
 -- ----------------------------------------------------------

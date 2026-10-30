@@ -45,6 +45,21 @@ StaticPopupDialogs["SLOTPORT_CONFIRM_DELETE_MACROS"] = {
     preferredIndex = 3,
 }
 
+-- data (3rd arg to StaticPopup_Show) = { key = character key, specID = spec or nil for the whole character }
+StaticPopupDialogs["SLOTPORT_CONFIRM_DELETE_CHAR"] = {
+    text         = L("CHARS_DELETE_CONFIRM"),
+    button1      = YES,
+    button2      = NO,
+    OnAccept     = function(_, data)
+        SlotPort:DeleteSnapshot(data.key, data.specID)
+        SlotPortCharsGUI:Rebuild()
+    end,
+    timeout      = 0,
+    whileDead    = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
 -- Export: shows the export string pre-filled and highlighted, ready for Ctrl+C.
 -- data (3rd arg to StaticPopup_Show) is the export string.
 StaticPopupDialogs["SLOTPORT_EXPORT"] = {
@@ -688,8 +703,11 @@ function SlotPortGUI:ShowPage(id)
     end
     self.btnResetSlots:SetShown(id == "bars")
     self.btnDeleteMacros:SetShown(id == "macros")
+    -- the characters page copies saved layouts, it has nothing to export from the selection
+    self.btnExport:SetShown(id ~= "chars")
     if id == "log" then self.navButtons.log.dot:Hide() end
     if id == "macros" then SlotPortMacroGUI:RebuildList() end
+    if id == "chars" then SlotPortCharsGUI:Rebuild() end
 end
 
 -- Position the visible bar cards (search filter applied)
@@ -903,6 +921,7 @@ function SlotPortGUI:CreateMainFrame()
     local navDefs = {
         { id = "bars",   label = L("NAV_BARS")   },
         { id = "macros", label = L("MACRO_BTN")  },
+        { id = "chars",  label = L("NAV_CHARS")  },
         { id = "log",    label = L("LOG_LABEL")  },
     }
     self.navButtons = {}
@@ -968,12 +987,12 @@ function SlotPortGUI:CreateMainFrame()
     end)
 
     -- Footer: page-specific destructive action on the left, Import/Export on the right
-    local btnExport = CreateButton(content, L("EXPORT_BTN"), "primary", ExportSelection, 100)
-    btnExport:SetPoint("BOTTOMRIGHT", -14, 12)
+    self.btnExport = CreateButton(content, L("EXPORT_BTN"), "primary", ExportSelection, 100)
+    self.btnExport:SetPoint("BOTTOMRIGHT", -14, 12)
     local btnImport = CreateButton(content, L("IMPORT_BTN"), "outline", function()
         StaticPopup_Show("SLOTPORT_IMPORT")
     end, 100)
-    btnImport:SetPoint("RIGHT", btnExport, "LEFT", -8, 0)
+    btnImport:SetPoint("RIGHT", self.btnExport, "LEFT", -8, 0)
 
     self.btnResetSlots = CreateButton(content, L("RESET_SLOTS_BTN"), "danger", ResetSelection)
     self.btnResetSlots:SetPoint("BOTTOMLEFT", 14, 12)
@@ -1070,6 +1089,26 @@ function SlotPortGUI:CreateMainFrame()
     macroScroll:SetPoint("BOTTOMRIGHT", macroPage, "BOTTOMRIGHT", -12, 0)
     SlotPortMacroGUI.listContent = macroContent
     SlotPortMacroGUI.scroll      = macroScroll
+
+    -- ------------------------------------------------------
+    -- Page: characters
+    -- ------------------------------------------------------
+    local charsPage = NewPage("chars")
+    local charsHint = CreateText(charsPage, "SlotPortFontSmall", C.dim)
+    charsHint:SetPoint("TOPLEFT", 0, -2)
+    charsHint:SetPoint("TOPRIGHT", -40, -2)
+    charsHint:SetText(L("CHARS_HINT"))
+
+    local charsScroll, charsContent = CreateScroll(charsPage)
+    charsScroll:SetPoint("TOPLEFT", charsHint, "BOTTOMLEFT", 0, -12)
+    charsScroll:SetPoint("BOTTOMRIGHT", charsPage, "BOTTOMRIGHT", -12, 0)
+    SlotPortCharsGUI.listContent = charsContent
+    SlotPortCharsGUI.scroll      = charsScroll
+
+    local charsEmpty = CreateText(charsPage, "SlotPortFontNormal", C.dim, "CENTER")
+    charsEmpty:SetPoint("CENTER", charsScroll, "CENTER", 0, 0)
+    charsEmpty:SetText(L("CHARS_EMPTY"))
+    SlotPortCharsGUI.emptyText = charsEmpty
 
     -- ------------------------------------------------------
     -- Page: log
@@ -1278,4 +1317,177 @@ function SlotPortMacroGUI:Toggle()
         return
     end
     gui:Open("macros")
+end
+
+-- ============================================================
+-- SlotPortCharsGUI - characters page inside the main window.
+-- Flat list of pooled rows: one row per saved character, followed by
+-- one row per specialization while the character is expanded.
+-- ============================================================
+SlotPortCharsGUI = {}
+
+local CHAR_ROW_H = 30
+local SPEC_ROW_H = 26
+local ROW_GAP    = 4
+local DEL_W      = 30   -- delete button, wide enough to read the cross at a glance
+
+local function AgeText(t)
+    local diff = time() - (t or 0)
+    if diff < 60 then return L("CHARS_NOW") end
+    return string.format(L("CHARS_AGO"), SecondsToTime(diff, true, false, 1))
+end
+
+local function PaintCharRow(row, hover)
+    if row._isChar then
+        row:SetBackdropColor(rgba(C.card))
+        row:SetBackdropBorderColor(rgba(hover and C.lineHi or C.line))
+    else
+        row:SetBackdropColor(rgba(C.card, hover and 1 or 0))
+        row:SetBackdropBorderColor(0, 0, 0, 0)
+    end
+end
+
+local function CreateCharRow(parent)
+    local row = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    row:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
+
+    -- expand/collapse mark drawn from two bars: a minus, plus a vertical bar while collapsed
+    row.toggle = CreateFrame("Frame", nil, row)
+    row.toggle:SetSize(12, 12)
+    row.toggle:SetPoint("LEFT", 10, 0)
+    local barH = row.toggle:CreateTexture(nil, "OVERLAY")
+    barH:SetSize(10, 2)
+    barH:SetPoint("CENTER")
+    barH:SetColorTexture(rgba(C.muted))
+    row.toggleV = row.toggle:CreateTexture(nil, "OVERLAY")
+    row.toggleV:SetSize(2, 10)
+    row.toggleV:SetPoint("CENTER")
+    row.toggleV:SetColorTexture(rgba(C.muted))
+
+    row.del = CreateButton(row, "×", "danger", function()
+        local label = row._isChar and row._label or (row._label .. " – " .. row._specLabel)
+        StaticPopup_Show("SLOTPORT_CONFIRM_DELETE_CHAR", label, nil,
+            { key = row._key, specID = row._specID })
+    end, DEL_W)
+    row.del.text:SetFontObject("SlotPortFontClose")
+    row.del:SetSize(DEL_W, 24)
+    row.del:SetPoint("RIGHT", -6, 0)
+
+    row.copy = CreateButton(row, L("CHARS_COPY"), "outline", function()
+        local str = SlotPort:GetSnapshotString(row._key, row._specID)
+        if str then SlotPortGUI:ShowExportString(str) end
+    end, 70)
+    row.copy:SetHeight(22)
+    row.copy:SetPoint("RIGHT", row.del, "LEFT", -6, 0)
+    row.copy:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(string.format(L("CHARS_COPY_TIP"), row._macroCount or 0), 1, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    row.copy:HookScript("OnLeave", function() GameTooltip:Hide() end)
+
+    row.name  = CreateText(row, "SlotPortFontNormal", C.text)
+    row.info  = CreateText(row, "SlotPortFontSmall", C.dim, "RIGHT")
+    row.info:SetWidth(170)
+    row.info:SetWordWrap(false)
+    row.realm = CreateText(row, "SlotPortFontSmall", C.dim)
+    row.realm:SetMaxLines(1)
+
+    row:SetScript("OnEnter", function(self) PaintCharRow(self, true) end)
+    row:SetScript("OnLeave", function(self) PaintCharRow(self, false) end)
+    row:SetScript("OnClick", function(self)
+        if not self._isChar then return end
+        SlotPortCharsGUI.expanded[self._key] = not SlotPortCharsGUI.expanded[self._key]
+        SlotPortCharsGUI:Rebuild()
+    end)
+    return row
+end
+
+local function BindCharRow(row, c, isCurrent, expanded)
+    row._isChar, row._key, row._specID = true, c.key, nil
+    row._label, row._macroCount = c.name, c.macroCount
+
+    row.toggle:Show()
+    row.toggleV:SetShown(not expanded)
+    row.copy:Hide()
+    row.del:SetShown(not isCurrent)
+
+    local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[c.class]
+    row.name:SetText(c.name)
+    if color then row.name:SetTextColor(color.r, color.g, color.b) else row.name:SetTextColor(rgba(C.text)) end
+    row.name:ClearAllPoints()
+    row.name:SetPoint("LEFT", row.toggle, "RIGHT", 8, 0)
+
+    row.info:ClearAllPoints()
+    row.info:SetPoint("RIGHT", row, "RIGHT", isCurrent and -12 or -(DEL_W + 14), 0)
+    row.info:SetText(string.format(L("CHARS_SPECS"), #c.specs) .. " · " .. AgeText(c.seen))
+
+    row.realm:ClearAllPoints()
+    row.realm:SetPoint("LEFT", row.name, "RIGHT", 6, 0)
+    row.realm:SetPoint("RIGHT", row.info, "LEFT", -6, 0)
+    row.realm:SetText(c.realm .. (isCurrent and (" · |cff35c4f0" .. L("CHARS_CURRENT") .. "|r") or ""))
+
+    PaintCharRow(row, false)
+end
+
+local function BindSpecRow(row, c, s, isCurrent)
+    row._isChar, row._key, row._specID = false, c.key, s.id
+    row._label, row._specLabel, row._macroCount = c.name, s.name, c.macroCount
+
+    row.toggle:Hide()
+    row.copy:Show()
+    row.del:SetShown(not isCurrent)
+
+    row.name:SetText(s.name)
+    row.name:SetTextColor(rgba(isCurrent and C.accent or C.text))
+    row.name:ClearAllPoints()
+    row.name:SetPoint("LEFT", row, "LEFT", 34, 0)
+
+    row.info:ClearAllPoints()
+    row.info:SetPoint("RIGHT", row.copy, "LEFT", -10, 0)
+    row.info:SetText(string.format(L("CHARS_SLOTS"), s.filled or 0) .. " · " .. AgeText(s.t))
+
+    row.realm:SetText("")
+    PaintCharRow(row, false)
+end
+
+function SlotPortCharsGUI:Rebuild()
+    if not self.listContent then return end
+    SlotPort:FlushSnapshot()   -- the current character's row should show its latest layout
+    self._rows = self._rows or {}
+    self.expanded = self.expanded or {}
+
+    local currentKey, currentSpec = SlotPort:GetCurrentSnapshotKeys()
+    local n, y = 0, 0
+    local function nextRow(height)
+        n = n + 1
+        local row = self._rows[n]
+        if not row then
+            row = CreateCharRow(self.listContent)
+            self._rows[n] = row
+        end
+        row:SetHeight(height)
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT",  self.listContent, "TOPLEFT",  0, -y)
+        row:SetPoint("TOPRIGHT", self.listContent, "TOPRIGHT", 0, -y)
+        row:Show()
+        y = y + height + ROW_GAP
+        return row
+    end
+
+    for _, c in ipairs(SlotPort:GetSnapshotChars()) do
+        local isCurrent = (c.key == currentKey)
+        if self.expanded[c.key] == nil then self.expanded[c.key] = isCurrent end
+        BindCharRow(nextRow(CHAR_ROW_H), c, isCurrent, self.expanded[c.key])
+        if self.expanded[c.key] then
+            for _, s in ipairs(c.specs) do
+                BindSpecRow(nextRow(SPEC_ROW_H), c, s, isCurrent and s.id == currentSpec)
+            end
+        end
+    end
+    for i = n + 1, #self._rows do self._rows[i]:Hide() end
+
+    self.listContent:SetHeight(math.max(1, y - ROW_GAP))
+    self.emptyText:SetShown(n == 0)
+    if self.scroll then self.scroll.UpdateBar() end
 end

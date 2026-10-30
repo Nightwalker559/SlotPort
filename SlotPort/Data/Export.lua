@@ -204,7 +204,13 @@ function SlotPort:Export()
     if self:GetSelectedCount() == 0 then
         return nil, L("NO_SLOTS_SELECTED")
     end
+    return self:ExportSlots(self.selectedSlots)
+end
 
+-- Exports the slots in the set `slots` ([slot] = true), whichever bars they sit on.
+-- Also used for the character snapshots (Data/Characters.lua), which export
+-- every slot instead of the user's selection.
+function SlotPort:ExportSlots(slots)
     SlotPort.petSpellCache = nil
     local mountCache = SlotPort.buildMountSpellCache()
 
@@ -214,7 +220,7 @@ function SlotPort:Export()
         local numSlots = bar.endSlot - bar.startSlot + 1
         for s = 1, numSlots do
             local slot = bar.startSlot + (s - 1)
-            if self.selectedSlots[slot] then
+            if slots[slot] then
                 if bar.isElvUI and not bar.fixedSlot then
                     parts[#parts + 1] = exportElvUISlot(bar, s, slot, mountCache)
                 else

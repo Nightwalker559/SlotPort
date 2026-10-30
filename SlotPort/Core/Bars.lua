@@ -584,18 +584,25 @@ function SlotPort:ToggleBar(barIndex, selected)
     end
 end
 
-function SlotPort:SelectAll()
+-- Set ([slot] = true) of every slot on a bar worth exporting. Every registered
+-- bar is always shown as a row (dimmed, not hidden, when disabled - see
+-- UI/GUI.lua), so a disabled-but-populated bar is just as selectable as an
+-- active one. Only bars with nothing on them are skipped.
+function SlotPort:CollectAllSlots()
+    local slots = {}
     for _, bar in ipairs(self.BARS) do
-        -- Every registered bar is always shown as a row (dimmed, not
-        -- hidden, when disabled - see UI/GUI.lua), so a
-        -- disabled-but-populated bar is just as selectable as an active
-        -- one. Only skip bars with nothing to select.
-        local shown = bar.alwaysShow or bar.isSkyriding or bar.hasContent
-        if shown then
+        if bar.alwaysShow or bar.isSkyriding or bar.hasContent then
             for slot = bar.startSlot, bar.endSlot do
-                self.selectedSlots[slot] = true
+                slots[slot] = true
             end
         end
+    end
+    return slots
+end
+
+function SlotPort:SelectAll()
+    for slot in pairs(self:CollectAllSlots()) do
+        self.selectedSlots[slot] = true
     end
 end
 

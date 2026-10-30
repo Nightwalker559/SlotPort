@@ -80,6 +80,7 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
             SlotPort:RefreshBarContent()
             SlotPort:DetectElvUIBars()
             SlotPort:SetupElvUIWatchers()
+            SlotPort:SnapshotCurrentCharacter()
             if SlotPortGUI.mainFrame and SlotPortGUI.mainFrame:IsShown() then
                 SlotPortGUI:RebuildGrid()
             end

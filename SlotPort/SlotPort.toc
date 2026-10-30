@@ -21,10 +21,11 @@ Core\SlotPort.lua
 Core\Bars.lua
 Core\Cache.lua
 
-# Data (macros, export, import)
+# Data (macros, export, import, character snapshots)
 Data\Macros.lua
 Data\Export.lua
 Data\Import.lua
+Data\Characters.lua
 
 # UI
 UI\GUI.lua
