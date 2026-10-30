@@ -10,6 +10,12 @@
 
 ### Fixed
 - Spells that change with the shapeshift form (Druid: Wild Charge, Stampeding Roar) were exported as the variant of the form the character was in (cat/bear) and then reported as "not in spellbook" when imported in another form. Export now stores the base spell, and import resolves older strings to it as well.
+- Importing a macro slot that was exported by the start of its body (macro name unavailable) never looked at character macros.
+- The log page keeps only the newest 20000 characters instead of growing without limit.
+
+### Changed
+- The main window only listens to action bar changes while it is open.
+- Internal: bars, ElvUI support and slot selection (`Core/`) and widgets, macro page and characters page (`UI/`) are split into separate files; shared constants live in one place.
 
 ---
 

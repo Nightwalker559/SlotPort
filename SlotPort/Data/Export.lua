@@ -1,6 +1,10 @@
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+-- ============================================================
+-- Export: slots -> "SLOTPORT:v1|slot:type:id:extra|..." string (optionally
+-- !SP3!-compressed), plus the codec and the splitting helpers shared with
+-- Import.lua and Macros.lua.
+-- ============================================================
 
-local RANDOM_MOUNT_ID = 268435455   -- "Random Favorite Mount" pseudo mount ID
+local function L(key) return (SlotPortL and SlotPortL[key]) or key end
 
 -- Escapes a literal "|" for the export format ("||"); see SlotPort.SplitEntries.
 local function esc(s)
@@ -50,7 +54,7 @@ end
 
 local function mountEntry(slot, mountID)
     local mountName = ""
-    if mountID and mountID ~= RANDOM_MOUNT_ID and C_MountJournal then
+    if mountID and mountID ~= SlotPort.RANDOM_MOUNT_ID and C_MountJournal then
         local name = C_MountJournal.GetMountInfoByID(mountID)
         mountName = name and esc(name) or ""
     end
@@ -102,7 +106,7 @@ end
 -- ----------------------------------------------------------
 local function exportStandardSlot(slot)
     if isAssistedCombatSlot(slot) then
-        return string.format("%d:assistedcombat:1229376:", slot)
+        return string.format("%d:assistedcombat:%d:", slot, SlotPort.ASSISTED_COMBAT_SPELL_ID)
     end
 
     local actionType, id, subtype = GetActionInfo(slot)
@@ -293,10 +297,9 @@ function SlotPort.EncodeForExport(raw)
         if encoded then
             -- Self-verify: immediately decode what we just encoded and compare
             -- to the original. Guards against native CompressString/
-            -- DecompressString round-trip corruption on larger payloads
-            -- (confirmed to occur in-game: imported more slots than exported,
-            -- caused by stray bytes surviving a bad round-trip). Never hand
-            -- out a compressed string we haven't verified decodes correctly.
+            -- DecompressString round-trip corruption on larger payloads (stray
+            -- bytes survive a bad round-trip and import extra slots). Never
+            -- hand out a compressed string we haven't verified decodes correctly.
             local ok, verified = pcall(nativeDecompress, encoded)
             if ok and verified == raw then
                 return "!SP3!" .. encoded
@@ -311,8 +314,8 @@ end
 -- Splits an export string on "|" separators. Content fields (macro/toy/item/
 -- mount names) escape a literal "|" as "||" at export time. A char-by-char
 -- scan is required to tell "||" (literal pipe) apart from a single "|"
--- (entry separator) - gmatch("[^|]+") can't, and used to split escaped
--- content into extra bogus entries, inflating the imported slot count.
+-- (entry separator) - gmatch("[^|]+") can't: it would split escaped content
+-- into extra bogus entries and inflate the imported slot count.
 -- Newlines are normalised to "|" for manually typed strings.
 function SlotPort.SplitEntries(str)
     str = str:gsub("\r\n", "\n"):gsub("\r", "\n"):gsub("\n", "|")

@@ -106,6 +106,7 @@ function SlotPort:ImportMacros(str)
     local imported = 0
     local skipped  = 0
     local errors   = {}
+    local DEFAULT_ICON = "INV_Misc_QuestionMark"
 
     for i = 2, #entries do
         -- Scope tag optional: name:icon:body:g or name:icon:body:c or name:icon:body (legacy)
@@ -125,7 +126,6 @@ function SlotPort:ImportMacros(str)
             -- so they are created with the default question-mark icon (restoring
             -- the exported icon would freeze it). Macros without it keep the icon
             -- the user set manually, so it is restored from the export.
-            local DEFAULT_ICON = "INV_Misc_QuestionMark"
             local icon = DEFAULT_ICON
             local exportedIcon = tonumber(iconStr)
             if exportedIcon and exportedIcon > 0 and not body:lower():find("#show", 1, true) then

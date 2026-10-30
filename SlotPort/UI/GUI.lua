@@ -1,3 +1,9 @@
+-- ============================================================
+-- Main window: sidebar, bars page (bar cards with slot buttons), log page,
+-- export/import footer. The macros and characters pages live in
+-- MacroPage.lua and CharsPage.lua.
+-- ============================================================
+
 -- Locale access
 local function L(key) return (SlotPortL and SlotPortL[key]) or key end
 
@@ -38,21 +44,6 @@ StaticPopupDialogs["SLOTPORT_CONFIRM_DELETE_MACROS"] = {
             SlotPortGUI:AppendLog(L("DELETE_MACROS_BTN"), tostring(result), true)
         end
         SlotPortMacroGUI:RebuildList()
-    end,
-    timeout      = 0,
-    whileDead    = true,
-    hideOnEscape = true,
-    preferredIndex = 3,
-}
-
--- data (3rd arg to StaticPopup_Show) = { key = character key, specID = spec or nil for the whole character }
-StaticPopupDialogs["SLOTPORT_CONFIRM_DELETE_CHAR"] = {
-    text         = L("CHARS_DELETE_CONFIRM"),
-    button1      = YES,
-    button2      = NO,
-    OnAccept     = function(_, data)
-        SlotPort:DeleteSnapshot(data.key, data.specID)
-        SlotPortCharsGUI:Rebuild()
     end,
     timeout      = 0,
     whileDead    = true,
@@ -122,42 +113,10 @@ StaticPopupDialogs["SLOTPORT_IMPORT"] = {
     preferredIndex = 3,
 }
 
--- ============================================================
--- Theme: Graphite + sidebar layout (own skin, no dependency on
--- Blizzard templates, AceGUI or ElvUI)
--- ============================================================
-local WHITE = "Interface\\Buttons\\WHITE8X8"
-
-local C = {
-    bg         = { 0.082, 0.090, 0.110 },
-    side       = { 0.067, 0.075, 0.094 },
-    card       = { 0.106, 0.114, 0.141 },
-    line       = { 0.149, 0.165, 0.200 },
-    lineHi     = { 0.227, 0.251, 0.298 },
-    text       = { 0.843, 0.855, 0.878 },
-    muted      = { 0.541, 0.565, 0.612 },
-    dim        = { 0.357, 0.380, 0.431 },
-    accent     = { 0.208, 0.769, 0.941 },
-    accentHi   = { 0.330, 0.830, 0.965 },
-    onAccent   = { 0.043, 0.063, 0.078 },
-    danger     = { 0.886, 0.337, 0.337 },
-    slotEmpty  = { 0.114, 0.125, 0.153 },
-    slotFilled = { 0.055, 0.063, 0.078 },
-}
-
-local function rgba(c, a) return c[1], c[2], c[3], a or 1 end
-
-local FONT_PATH = STANDARD_TEXT_FONT
-local fontNormal = CreateFont("SlotPortFontNormal")
-fontNormal:SetFont(FONT_PATH, 12, "")
-local fontSmall = CreateFont("SlotPortFontSmall")
-fontSmall:SetFont(FONT_PATH, 11, "")
-local fontTiny = CreateFont("SlotPortFontTiny")
-fontTiny:SetFont(FONT_PATH, 10, "")
-local fontTitle = CreateFont("SlotPortFontTitle")
-fontTitle:SetFont(FONT_PATH, 15, "")
-local fontClose = CreateFont("SlotPortFontClose")
-fontClose:SetFont(FONT_PATH, 24, "")
+local ui = SlotPort.ui
+local WHITE, C, rgba = ui.WHITE, ui.C, ui.rgba
+local CreateBox, CreateText, CreateButton = ui.CreateBox, ui.CreateText, ui.CreateButton
+local CreateCheckMark, CreateScroll, CreateSearchBox = ui.CreateCheckMark, ui.CreateScroll, ui.CreateSearchBox
 
 -- ----------------------------------------------------------
 -- Layout constants
@@ -175,205 +134,6 @@ local FRAME_H   = 500
 local ROW_W     = SLOTS_PER_BAR * SLOT_SIZE + (SLOTS_PER_BAR - 1) * SLOT_GAP   -- 393
 local LIST_W    = ROW_W + CARD_PAD * 2                                           -- 417
 local FRAME_W   = SIDEBAR_W + 14 + LIST_W + 12 + 14 + 2                          -- 591 (+2: window border)
-
-local MACRO_ROW_H = 28
-
--- ----------------------------------------------------------
--- Widget helpers
--- ----------------------------------------------------------
-local function CreateBox(parent, bg, border, borderAlpha)
-    local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    f:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
-    if bg then f:SetBackdropColor(rgba(bg)) else f:SetBackdropColor(0, 0, 0, 0) end
-    if border then f:SetBackdropBorderColor(rgba(border, borderAlpha)) else f:SetBackdropBorderColor(0, 0, 0, 0) end
-    return f
-end
-
-local function CreateText(parent, font, color, justify)
-    local fs = parent:CreateFontString(nil, "OVERLAY", font or "SlotPortFontNormal")
-    fs:SetTextColor(rgba(color or C.text))
-    fs:SetJustifyH(justify or "LEFT")
-    return fs
-end
-
-local BTN_STYLES = {
-    primary = { bg = C.accent, bgHi = C.accentHi, border = C.accent,  text = C.onAccent, textHi = C.onAccent },
-    outline = { bg = nil,      bgHi = C.card,     border = C.lineHi,  text = C.text,     textHi = C.text },
-    ghost   = { bg = nil,      bgHi = C.card,     border = nil,       text = C.muted,    textHi = C.text },
-    danger  = { bg = nil,      bgHi = C.card,     border = nil,       text = C.danger,   textHi = C.danger },
-    active  = { bg = C.accent, bgA = 0.16, bgHi = C.accent, bgHiA = 0.24, border = nil, text = C.accent, textHi = C.accent },
-}
-
-local function PaintButton(b, hover)
-    local st = b._st
-    local bg = hover and st.bgHi or st.bg
-    if bg then
-        local a = hover and st.bgHiA or st.bgA or 1
-        b:SetBackdropColor(rgba(bg, a))
-    else
-        b:SetBackdropColor(0, 0, 0, 0)
-    end
-    if st.border then b:SetBackdropBorderColor(rgba(st.border)) else b:SetBackdropBorderColor(0, 0, 0, 0) end
-    b.text:SetTextColor(rgba(hover and st.textHi or st.text))
-end
-
-local function CreateButton(parent, label, style, onClick, minW)
-    local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
-    b:SetHeight(28)
-    b.text = b:CreateFontString(nil, "OVERLAY", "SlotPortFontNormal")
-    b.text:SetPoint("CENTER", 0, 0)
-    b._st = BTN_STYLES[style or "outline"]
-    b._minW = minW or 0
-    function b:SetLabel(t)
-        self.text:SetText(t or "")
-        self:SetWidth(math.max(self._minW, self.text:GetStringWidth() + 26))
-    end
-    function b:SetStyle(name)
-        self._st = BTN_STYLES[name]
-        PaintButton(self, false)
-    end
-    b:SetLabel(label)
-    PaintButton(b, false)
-    b:SetScript("OnEnter", function(self) PaintButton(self, true) end)
-    b:SetScript("OnLeave", function(self) PaintButton(self, false) end)
-    if onClick then b:SetScript("OnClick", onClick) end
-    return b
-end
-
--- Square check mark: state is "none", "part" or "full"
-local function CreateCheckMark(parent, size)
-    local box = CreateBox(parent, C.side, C.lineHi)
-    box:SetSize(size or 16, size or 16)
-    local tick = box:CreateTexture(nil, "OVERLAY")
-    tick:SetPoint("CENTER", 0, 0)
-    tick:SetSize((size or 16) - 2, (size or 16) - 2)
-    tick:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
-    tick:SetDesaturated(true)
-    tick:SetVertexColor(rgba(C.onAccent))
-    local dash = box:CreateTexture(nil, "OVERLAY")
-    dash:SetPoint("CENTER", 0, 0)
-    dash:SetSize(8, 2)
-    dash:SetColorTexture(rgba(C.onAccent))
-    box.tick, box.dash = tick, dash
-    function box:SetState(state)
-        if state == "none" then
-            self:SetBackdropColor(rgba(C.side))
-            self:SetBackdropBorderColor(rgba(C.lineHi))
-            self.tick:Hide(); self.dash:Hide()
-        else
-            self:SetBackdropColor(rgba(C.accent))
-            self:SetBackdropBorderColor(rgba(C.accent))
-            self.tick:SetShown(state == "full")
-            self.dash:SetShown(state == "part")
-        end
-    end
-    box:SetState("none")
-    return box
-end
-
--- Slim scroll frame with a thin custom scroll bar.
--- Returns scroll, content. onWidth(w) is called whenever the viewport width changes.
-local function CreateScroll(parent, onWidth)
-    local scroll = CreateFrame("ScrollFrame", nil, parent)
-    local content = CreateFrame("Frame", nil, scroll)
-    content:SetSize(10, 10)
-    scroll:SetScrollChild(content)
-
-    local track = CreateFrame("Frame", nil, parent)
-    track:SetWidth(5)
-    track:SetPoint("TOPLEFT",    scroll, "TOPRIGHT",    5, 0)
-    track:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", 5, 0)
-    local trackBG = track:CreateTexture(nil, "BACKGROUND")
-    trackBG:SetAllPoints()
-    trackBG:SetColorTexture(rgba(C.line, 0.6))
-
-    local thumb = CreateFrame("Button", nil, track)
-    thumb:SetWidth(5)
-    thumb:SetHeight(30)
-    local thumbTex = thumb:CreateTexture(nil, "OVERLAY")
-    thumbTex:SetAllPoints()
-    thumbTex:SetColorTexture(rgba(C.lineHi))
-
-    local function update()
-        local range  = scroll:GetVerticalScrollRange() or 0
-        local trackH = track:GetHeight() or 0
-        if range <= 0.5 or trackH <= 0 then
-            track:Hide()
-            return
-        end
-        track:Show()
-        local viewH  = scroll:GetHeight() or 0
-        local thumbH = math.max(24, trackH * viewH / (viewH + range))
-        local pos    = (scroll:GetVerticalScroll() / range) * (trackH - thumbH)
-        thumb:SetHeight(thumbH)
-        thumb:ClearAllPoints()
-        thumb:SetPoint("TOP", track, "TOP", 0, -pos)
-    end
-    scroll.UpdateBar = update
-
-    scroll:SetScript("OnScrollRangeChanged", update)
-    scroll:SetScript("OnVerticalScroll", update)
-    scroll:SetScript("OnSizeChanged", function(_, w)
-        content:SetWidth(w)
-        if onWidth then onWidth(w) end
-        update()
-    end)
-
-    scroll:EnableMouseWheel(true)
-    scroll:SetScript("OnMouseWheel", function(self, delta)
-        local range = self:GetVerticalScrollRange() or 0
-        self:SetVerticalScroll(math.min(range, math.max(0, self:GetVerticalScroll() - delta * 42)))
-    end)
-
-    local drag
-    thumb:SetScript("OnMouseDown", function(self)
-        local _, y = GetCursorPosition()
-        drag = { y = y / self:GetEffectiveScale(), s = scroll:GetVerticalScroll() }
-        self:SetScript("OnUpdate", function()
-            local _, cy = GetCursorPosition()
-            cy = cy / thumb:GetEffectiveScale()
-            local range = scroll:GetVerticalScrollRange() or 0
-            local free  = track:GetHeight() - thumb:GetHeight()
-            if free <= 0 or not drag then return end
-            local new = drag.s + (drag.y - cy) / free * range
-            scroll:SetVerticalScroll(math.min(range, math.max(0, new)))
-        end)
-    end)
-    local function stopDrag() thumb:SetScript("OnUpdate", nil) end
-    thumb:SetScript("OnMouseUp", stopDrag)
-    thumb:SetScript("OnHide", stopDrag)
-
-    return scroll, content
-end
-
-local function CreateSearchBox(parent, placeholder, onChange)
-    local box = CreateBox(parent, C.side, C.line)
-    box:SetHeight(28)
-    local eb = CreateFrame("EditBox", nil, box)
-    eb:SetPoint("TOPLEFT", 10, -1)
-    eb:SetPoint("BOTTOMRIGHT", -10, 1)
-    eb:SetFontObject("SlotPortFontNormal")
-    eb:SetTextColor(rgba(C.text))
-    eb:SetAutoFocus(false)
-    eb:SetMaxLetters(40)
-    local ph = CreateText(box, "SlotPortFontNormal", C.dim)
-    ph:SetPoint("LEFT", 10, 0)
-    ph:SetText(placeholder)
-    eb:SetScript("OnTextChanged", function(self)
-        ph:SetShown(self:GetText() == "")
-        onChange(self:GetText())
-    end)
-    eb:SetScript("OnEscapePressed", function(self)
-        self:SetText("")
-        self:ClearFocus()
-    end)
-    eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-    eb:SetScript("OnEditFocusGained", function() box:SetBackdropBorderColor(rgba(C.accent)) end)
-    eb:SetScript("OnEditFocusLost",   function() box:SetBackdropBorderColor(rgba(C.line)) end)
-    box.editBox = eb
-    return box
-end
 
 -- ----------------------------------------------------------
 -- Slot buttons
@@ -431,7 +191,7 @@ local function ShowSlotTooltip(self)
                 (spellName and ("  |cff888888(" .. spellName .. ")|r") or ""))
         end
     elseif actionType == "summonmount" then
-        if id == 268435455 then
+        if id == SlotPort.RANDOM_MOUNT_ID then
             GameTooltip:SetText("|cff00ccff" .. L("TT_MOUNT_RANDOM") .. "|r")
         else
             local name = C_MountJournal and C_MountJournal.GetMountInfoByID
@@ -669,12 +429,18 @@ end
 -- ----------------------------------------------------------
 -- Log: append entry
 -- ----------------------------------------------------------
+local MAX_LOG_CHARS = 20000
+
 function SlotPortGUI:AppendLog(title, msg, isError)
     if not self.logBox then return end
     local color = isError and "|cffff4444" or "|cff35c4f0"
     local line  = color .. title .. ":|r " .. tostring(msg or "")
     local cur   = self.logBox._readOnlyText or ""
     local new   = cur ~= "" and (cur .. "\n" .. line) or line
+    if #new > MAX_LOG_CHARS then
+        -- keep the newest entries; the cut-off first line is dropped
+        new = new:sub(-MAX_LOG_CHARS):gsub("^[^\n]*\n", "")
+    end
     self.logBox._readOnlyText = new   -- set before SetText so OnTextChanged doesn't revert it
     self.logBox:SetText(new)
     local sf = self.logBox:GetParent()
@@ -862,11 +628,12 @@ function SlotPortGUI:CreateMainFrame()
     tinsert(UISpecialFrames, "SlotPortFrame")
 
     -- Slot changes: debounce, then refresh (or rebind if bars changed).
-    -- Ignored while the window is hidden - Open() refreshes everything.
-    frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+    -- Only listened to while the window is shown - Open() refreshes everything.
+    frame:SetScript("OnShow", function(self) self:RegisterEvent("ACTIONBAR_SLOT_CHANGED") end)
+    frame:SetScript("OnHide", function(self) self:UnregisterEvent("ACTIONBAR_SLOT_CHANGED") end)
     local _slotChangedPending = false
     frame:SetScript("OnEvent", function()
-        if _slotChangedPending or not frame:IsShown() then return end
+        if _slotChangedPending then return end
         _slotChangedPending = true
         RunNextFrame(function()
             _slotChangedPending = false
@@ -1041,94 +808,8 @@ function SlotPortGUI:CreateMainFrame()
     barScroll:SetPoint("BOTTOMRIGHT", barsPage, "BOTTOMRIGHT", -12, 0)
     self.barScroll   = barScroll
     self.listContent = barContent
-
-    -- ------------------------------------------------------
-    -- Page: macros
-    -- ------------------------------------------------------
-    local macroPage = NewPage("macros")
-    local macroBar = CreateFrame("Frame", nil, macroPage)
-    macroBar:SetPoint("TOPLEFT", 0, 0)
-    macroBar:SetPoint("TOPRIGHT", -40, 0)
-    macroBar:SetHeight(28)
-
-    SlotPortMacroGUI.activeTab = SlotPortMacroGUI.activeTab or "g"
-    SlotPortMacroGUI._tabs = {}
-    local function refreshTabs()
-        for _, t in ipairs(SlotPortMacroGUI._tabs) do
-            t.btn:SetStyle(t.id == SlotPortMacroGUI.activeTab and "active" or "outline")
-        end
-    end
-    local tabDefs = { { id = "g", labelKey = "TAB_GLOBAL" }, { id = "c", labelKey = "TAB_CHAR" } }
-    local prevTab
-    for idx, def in ipairs(tabDefs) do
-        local id = def.id
-        local btn = CreateButton(macroBar, L(def.labelKey), "outline", function()
-            SlotPortMacroGUI.activeTab = id
-            refreshTabs()
-            SlotPortMacroGUI:RebuildList()
-        end, 90)
-        if prevTab then btn:SetPoint("LEFT", prevTab, "RIGHT", 4, 0) else btn:SetPoint("LEFT", 0, 0) end
-        SlotPortMacroGUI._tabs[idx] = { id = id, btn = btn }
-        prevTab = btn
-    end
-    refreshTabs()
-
-    local mNone = CreateButton(macroBar, L("DESELECT_ALL"), "outline", function()
-        SlotPort:DeselectAllMacros(SlotPortMacroGUI.activeTab)
-        SlotPortMacroGUI:RebuildList()
-    end, 70)
-    mNone:SetPoint("RIGHT", 0, 0)
-    local mAll = CreateButton(macroBar, L("SELECT_ALL"), "outline", function()
-        SlotPort:SelectAllMacros(SlotPortMacroGUI.activeTab)
-        SlotPortMacroGUI:RebuildList()
-    end, 70)
-    mAll:SetPoint("RIGHT", mNone, "LEFT", -6, 0)
-
-    local macroScroll, macroContent = CreateScroll(macroPage)
-    macroScroll:SetPoint("TOPLEFT", macroBar, "BOTTOMLEFT", 0, -10)
-    macroScroll:SetPoint("BOTTOMRIGHT", macroPage, "BOTTOMRIGHT", -12, 0)
-    SlotPortMacroGUI.listContent = macroContent
-    SlotPortMacroGUI.scroll      = macroScroll
-
-    -- ------------------------------------------------------
-    -- Page: characters
-    -- ------------------------------------------------------
-    local charsPage = NewPage("chars")
-    local charsHint = CreateText(charsPage, "SlotPortFontSmall", C.dim)
-    charsHint:SetPoint("TOPLEFT", 0, -2)
-    charsHint:SetPoint("TOPRIGHT", -40, -2)
-    charsHint:SetText(L("CHARS_HINT"))
-
-    -- Only characters of the current class are listed unless this is ticked
-    local showAll = CreateFrame("Button", nil, charsPage)
-    showAll:SetHeight(22)
-    showAll:SetPoint("TOPLEFT", charsHint, "BOTTOMLEFT", 0, -8)
-    showAll:SetPoint("TOPRIGHT", charsHint, "BOTTOMRIGHT", 0, -8)
-    local showAllCheck = CreateCheckMark(showAll, 16)
-    showAllCheck:SetPoint("LEFT", 0, 0)
-    local showAllText = CreateText(showAll, "SlotPortFontSmall", C.muted)
-    showAllText:SetPoint("LEFT", showAllCheck, "RIGHT", 8, 0)
-    showAllText:SetText(L("CHARS_SHOW_ALL"))
-    local showAllHidden = CreateText(showAll, "SlotPortFontSmall", C.dim)
-    showAllHidden:SetPoint("LEFT", showAllText, "RIGHT", 8, 0)
-    showAll:SetScript("OnClick", function()
-        local global = SlotPort.db.global
-        global.showAllChars = not global.showAllChars or nil
-        SlotPortCharsGUI:Rebuild()
-    end)
-    SlotPortCharsGUI.showAllCheck  = showAllCheck
-    SlotPortCharsGUI.showAllHidden = showAllHidden
-
-    local charsScroll, charsContent = CreateScroll(charsPage)
-    charsScroll:SetPoint("TOPLEFT", showAll, "BOTTOMLEFT", 0, -8)
-    charsScroll:SetPoint("BOTTOMRIGHT", charsPage, "BOTTOMRIGHT", -12, 0)
-    SlotPortCharsGUI.listContent = charsContent
-    SlotPortCharsGUI.scroll      = charsScroll
-
-    local charsEmpty = CreateText(charsPage, "SlotPortFontNormal", C.dim, "CENTER")
-    charsEmpty:SetPoint("CENTER", charsScroll, "CENTER", 0, 0)
-    charsEmpty:SetText(L("CHARS_EMPTY"))
-    SlotPortCharsGUI.emptyText = charsEmpty
+    SlotPortMacroGUI:BuildPage(NewPage("macros"))
+    SlotPortCharsGUI:BuildPage(NewPage("chars"))
 
     -- ------------------------------------------------------
     -- Page: log
@@ -1213,307 +894,3 @@ function SlotPortGUI:Toggle()
 end
 
 -- GUI is created lazily on the first /sp via SlotPortGUI:Toggle().
-
--- ============================================================
--- SlotPortMacroGUI - macro page inside the main window
--- ============================================================
-SlotPortMacroGUI = {}
-
-local function CreateMacroRowFrame(parent)
-    local row = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    row:SetHeight(MACRO_ROW_H)
-    row:SetBackdrop({ bgFile = WHITE })
-    row:SetBackdropColor(0, 0, 0, 0)
-
-    row._check = CreateCheckMark(row, 16)
-    row._check:SetPoint("LEFT", 8, 0)
-
-    local iconTex = row:CreateTexture(nil, "ARTWORK")
-    iconTex:SetSize(20, 20)
-    iconTex:SetPoint("LEFT", 34, 0)
-    iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    row._icon = iconTex
-
-    local nameStr = CreateText(row, "SlotPortFontNormal", C.text)
-    nameStr:SetPoint("LEFT",  row, "LEFT",  62, 0)
-    nameStr:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-    nameStr:SetMaxLines(1)
-    row._nameStr = nameStr
-
-    row:SetScript("OnClick", function(self_row)
-        if not self_row._macro then return end
-        SlotPort:ToggleMacro(self_row._macro.index)
-        SlotPortMacroGUI:_RefreshRowState(self_row)
-        SlotPortGUI:UpdateStatusText()
-    end)
-    row:SetScript("OnEnter", function(self_row)
-        if not self_row._macro then return end
-        self_row._hover = true
-        SlotPortMacroGUI:_RefreshRowState(self_row)
-        GameTooltip:SetOwner(self_row, "ANCHOR_RIGHT")
-        GameTooltip:SetText(self_row._macro.name, 1, 1, 1)
-        local body = self_row._macro.body
-        if body and body ~= "" then
-            GameTooltip:AddLine(body, 0.8, 0.8, 0.8, true)
-        end
-        GameTooltip:Show()
-    end)
-    row:SetScript("OnLeave", function(self_row)
-        self_row._hover = false
-        SlotPortMacroGUI:_RefreshRowState(self_row)
-        GameTooltip:Hide()
-    end)
-    return row
-end
-
-function SlotPortMacroGUI:_RefreshRowState(row)
-    if not row._macro then return end
-    local sel = SlotPort.selectedMacros[row._macro.index]
-    row._check:SetState(sel and "full" or "none")
-    if sel then
-        row:SetBackdropColor(rgba(C.accent, row._hover and 0.2 or 0.12))
-    elseif row._hover then
-        row:SetBackdropColor(rgba(C.card))
-    else
-        row:SetBackdropColor(0, 0, 0, 0)
-    end
-end
-
-function SlotPortMacroGUI:UpdateStatusText()
-    SlotPortGUI:UpdateStatusText()
-end
-
-function SlotPortMacroGUI:RebuildList()
-    if not self.listContent then return end
-    self._rowPool = self._rowPool or {}
-
-    local activeScope = self.activeTab or "g"
-    local macros = {}
-    for _, m in ipairs(SlotPort:GetAllMacros()) do
-        if m.scope == activeScope then
-            macros[#macros + 1] = m
-        end
-    end
-    self.listContent:SetHeight(math.max(1, #macros * MACRO_ROW_H))
-
-    for i, m in ipairs(macros) do
-        if not self._rowPool[i] then
-            self._rowPool[i] = CreateMacroRowFrame(self.listContent)
-        end
-        local row = self._rowPool[i]
-        row._macro = m
-
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT",  self.listContent, "TOPLEFT",  0, -(i - 1) * MACRO_ROW_H)
-        row:SetPoint("TOPRIGHT", self.listContent, "TOPRIGHT", 0, -(i - 1) * MACRO_ROW_H)
-
-        -- Icon: FileDataID (number) or texture path (string)
-        local iconVal = tonumber(tostring(m.icon or "")) or tostring(m.icon or "")
-        if iconVal and iconVal ~= "" and iconVal ~= 0 then
-            local ok = pcall(function() row._icon:SetTexture(iconVal) end)
-            if not ok then row._icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark") end
-        else
-            row._icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-        end
-
-        row._nameStr:SetText(m.name)
-        self:_RefreshRowState(row)
-        row:Show()
-    end
-
-    for i = #macros + 1, #self._rowPool do
-        self._rowPool[i]:Hide()
-    end
-
-    if self.scroll then self.scroll.UpdateBar() end
-    SlotPortGUI:UpdateStatusText()
-end
-
--- Open/close the main window on the macros page
-function SlotPortMacroGUI:Toggle()
-    local gui = SlotPortGUI
-    if gui.mainFrame and gui.mainFrame:IsShown() and gui.page == "macros" then
-        gui.mainFrame:Hide()
-        return
-    end
-    gui:Open("macros")
-end
-
--- ============================================================
--- SlotPortCharsGUI - characters page inside the main window.
--- Flat list of pooled rows: one row per saved character, followed by
--- one row per specialization while the character is expanded.
--- ============================================================
-SlotPortCharsGUI = {}
-
-local CHAR_ROW_H = 30
-local SPEC_ROW_H = 26
-local ROW_GAP    = 4
-local DEL_W      = 30   -- delete button, wide enough to read the cross at a glance
-
-local function AgeText(t)
-    local diff = time() - (t or 0)
-    if diff < 60 then return L("CHARS_NOW") end
-    return string.format(L("CHARS_AGO"), SecondsToTime(diff, true, false, 1))
-end
-
-local function PaintCharRow(row, hover)
-    if row._isChar then
-        row:SetBackdropColor(rgba(C.card))
-        row:SetBackdropBorderColor(rgba(hover and C.lineHi or C.line))
-    else
-        row:SetBackdropColor(rgba(C.card, hover and 1 or 0))
-        row:SetBackdropBorderColor(0, 0, 0, 0)
-    end
-end
-
-local function CreateCharRow(parent)
-    local row = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    row:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
-
-    -- expand/collapse mark drawn from two bars: a minus, plus a vertical bar while collapsed
-    row.toggle = CreateFrame("Frame", nil, row)
-    row.toggle:SetSize(12, 12)
-    row.toggle:SetPoint("LEFT", 10, 0)
-    local barH = row.toggle:CreateTexture(nil, "OVERLAY")
-    barH:SetSize(10, 2)
-    barH:SetPoint("CENTER")
-    barH:SetColorTexture(rgba(C.muted))
-    row.toggleV = row.toggle:CreateTexture(nil, "OVERLAY")
-    row.toggleV:SetSize(2, 10)
-    row.toggleV:SetPoint("CENTER")
-    row.toggleV:SetColorTexture(rgba(C.muted))
-
-    row.del = CreateButton(row, "×", "danger", function()
-        local label = row._isChar and row._label or (row._label .. " – " .. row._specLabel)
-        StaticPopup_Show("SLOTPORT_CONFIRM_DELETE_CHAR", label, nil,
-            { key = row._key, specID = row._specID })
-    end, DEL_W)
-    row.del.text:SetFontObject("SlotPortFontClose")
-    row.del:SetSize(DEL_W, 24)
-    row.del:SetPoint("RIGHT", -6, 0)
-
-    row.copy = CreateButton(row, L("CHARS_COPY"), "outline", function()
-        local str = SlotPort:GetSnapshotString(row._key, row._specID)
-        if str then SlotPortGUI:ShowExportString(str) end
-    end, 70)
-    row.copy:SetHeight(22)
-    row.copy:SetPoint("RIGHT", row.del, "LEFT", -6, 0)
-    row.copy:HookScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText(string.format(L("CHARS_COPY_TIP"), row._macroCount or 0), 1, 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-    row.copy:HookScript("OnLeave", function() GameTooltip:Hide() end)
-
-    row.name  = CreateText(row, "SlotPortFontNormal", C.text)
-    row.info  = CreateText(row, "SlotPortFontSmall", C.dim, "RIGHT")
-    row.info:SetWidth(170)
-    row.info:SetWordWrap(false)
-    row.realm = CreateText(row, "SlotPortFontSmall", C.dim)
-    row.realm:SetMaxLines(1)
-
-    row:SetScript("OnEnter", function(self) PaintCharRow(self, true) end)
-    row:SetScript("OnLeave", function(self) PaintCharRow(self, false) end)
-    row:SetScript("OnClick", function(self)
-        if not self._isChar then return end
-        SlotPortCharsGUI.expanded[self._key] = not SlotPortCharsGUI.expanded[self._key]
-        SlotPortCharsGUI:Rebuild()
-    end)
-    return row
-end
-
-local function BindCharRow(row, c, isCurrent, expanded)
-    row._isChar, row._key, row._specID = true, c.key, nil
-    row._label, row._macroCount = c.name, c.macroCount
-
-    row.toggle:Show()
-    row.toggleV:SetShown(not expanded)
-    row.copy:Hide()
-    row.del:SetShown(not isCurrent)
-
-    local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[c.class]
-    row.name:SetText(c.name)
-    if color then row.name:SetTextColor(color.r, color.g, color.b) else row.name:SetTextColor(rgba(C.text)) end
-    row.name:ClearAllPoints()
-    row.name:SetPoint("LEFT", row.toggle, "RIGHT", 8, 0)
-
-    row.info:ClearAllPoints()
-    row.info:SetPoint("RIGHT", row, "RIGHT", isCurrent and -12 or -(DEL_W + 14), 0)
-    row.info:SetText(string.format(L("CHARS_SPECS"), #c.specs) .. " · " .. AgeText(c.seen))
-
-    row.realm:ClearAllPoints()
-    row.realm:SetPoint("LEFT", row.name, "RIGHT", 6, 0)
-    row.realm:SetPoint("RIGHT", row.info, "LEFT", -6, 0)
-    row.realm:SetText(c.realm .. (isCurrent and (" · |cff35c4f0" .. L("CHARS_CURRENT") .. "|r") or ""))
-
-    PaintCharRow(row, false)
-end
-
-local function BindSpecRow(row, c, s, isCurrent)
-    row._isChar, row._key, row._specID = false, c.key, s.id
-    row._label, row._specLabel, row._macroCount = c.name, s.name, c.macroCount
-
-    row.toggle:Hide()
-    row.copy:Show()
-    row.del:SetShown(not isCurrent)
-
-    row.name:SetText(s.name)
-    row.name:SetTextColor(rgba(isCurrent and C.accent or C.text))
-    row.name:ClearAllPoints()
-    row.name:SetPoint("LEFT", row, "LEFT", 34, 0)
-
-    row.info:ClearAllPoints()
-    row.info:SetPoint("RIGHT", row.copy, "LEFT", -10, 0)
-    row.info:SetText(string.format(L("CHARS_SLOTS"), s.filled or 0) .. " · " .. AgeText(s.t))
-
-    row.realm:SetText("")
-    PaintCharRow(row, false)
-end
-
-function SlotPortCharsGUI:Rebuild()
-    if not self.listContent then return end
-    SlotPort:FlushSnapshot()   -- the current character's row should show its latest layout
-    self._rows = self._rows or {}
-    self.expanded = self.expanded or {}
-
-    local currentKey, currentSpec = SlotPort:GetCurrentSnapshotKeys()
-    local n, y = 0, 0
-    local function nextRow(height)
-        n = n + 1
-        local row = self._rows[n]
-        if not row then
-            row = CreateCharRow(self.listContent)
-            self._rows[n] = row
-        end
-        row:SetHeight(height)
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT",  self.listContent, "TOPLEFT",  0, -y)
-        row:SetPoint("TOPRIGHT", self.listContent, "TOPRIGHT", 0, -y)
-        row:Show()
-        y = y + height + ROW_GAP
-        return row
-    end
-
-    local showAll = SlotPort.db.global.showAllChars
-    local _, myClass = UnitClass("player")
-    local chars, hidden = SlotPort:GetSnapshotChars(not showAll and myClass or nil)
-    self.showAllCheck:SetState(showAll and "full" or "none")
-    self.showAllHidden:SetText(hidden > 0 and string.format(L("CHARS_HIDDEN"), hidden) or "")
-
-    for _, c in ipairs(chars) do
-        local isCurrent = (c.key == currentKey)
-        if self.expanded[c.key] == nil then self.expanded[c.key] = isCurrent end
-        BindCharRow(nextRow(CHAR_ROW_H), c, isCurrent, self.expanded[c.key])
-        if self.expanded[c.key] then
-            for _, s in ipairs(c.specs) do
-                BindSpecRow(nextRow(SPEC_ROW_H), c, s, isCurrent and s.id == currentSpec)
-            end
-        end
-    end
-    for i = n + 1, #self._rows do self._rows[i]:Hide() end
-
-    self.listContent:SetHeight(math.max(1, y - ROW_GAP))
-    self.emptyText:SetShown(n == 0)
-    if self.scroll then self.scroll.UpdateBar() end
-end

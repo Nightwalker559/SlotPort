@@ -1,3 +1,8 @@
+-- ============================================================
+-- Lookups against the player's collections (spellbook, pets, mounts, toys)
+-- used by export and import.
+-- ============================================================
+
 -- ----------------------------------------------------------
 -- Spellbook iteration (Player OR Pet)
 --
@@ -72,6 +77,9 @@ function SlotPort.getPetSpellIndex(spellID)
     if SlotPort.petSpellCache == nil then buildPetSpellCache() end
     return SlotPort.petSpellCache and SlotPort.petSpellCache[spellID]
 end
+
+SlotPort.RANDOM_MOUNT_ID          = 268435455   -- "Random Favorite Mount" pseudo mount ID
+SlotPort.ASSISTED_COMBAT_SPELL_ID = 1229376     -- Single Button Assistant
 
 -- Base spell of a form/talent variant. GetActionInfo reports the variant that
 -- is active right now (cat form: Wild Charge 49376 instead of 102401), which

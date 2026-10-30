@@ -7,7 +7,7 @@
 --     name, realm, class, seen,
 --     macros = <SLOTPORTMACRO export string of the character macros> | nil,
 --     macroCount,
---     specs = { [specID] = { name, t, str = <SLOTPORT export string>, count, filled } },
+--     specs = { [specID] = { name, t, str = <SLOTPORT export string>, filled } },
 -- }
 -- Action bars are saved per specialization, so the slots live under the spec
 -- (specID 0 = no specialization yet); character macros are per character.
@@ -74,7 +74,7 @@ function SlotPort:SnapshotCurrentCharacter()
     if not chars then return end
 
     local name, realm = UnitName("player"), GetRealmName()
-    local slotStr, count, filled = self:ExportSlots(self:CollectAllSlots())
+    local slotStr, _, filled = self:ExportSlots(self:CollectAllSlots())
     dirty = false
     if not slotStr or filled == 0 then return end
 
@@ -88,7 +88,7 @@ function SlotPort:SnapshotCurrentCharacter()
 
     local specID, specName = currentSpec()
     entry.specs = entry.specs or {}
-    entry.specs[specID] = { name = specName, t = time(), str = slotStr, count = count, filled = filled }
+    entry.specs[specID] = { name = specName, t = time(), str = slotStr, filled = filled }
 end
 
 -- Refreshes the bar list, then saves if something changed. Used by the quiet-time
@@ -146,7 +146,7 @@ end)
 -- ----------------------------------------------------------
 
 -- Saved characters, current one first, then most recently seen. Each entry:
--- { key, name, realm, class, seen, macroCount, specs = { { id, name, t, count, filled }, ... } }
+-- { key, name, realm, class, seen, macroCount, specs = { { id, name, t, filled }, ... } }
 -- onlyClass (class token, optional) keeps only characters of that class; the
 -- second return value is how many characters that filter left out.
 function SlotPort:GetSnapshotChars(onlyClass)
@@ -163,7 +163,7 @@ function SlotPort:GetSnapshotChars(onlyClass)
             for specID, spec in pairs(entry.specs or {}) do
                 specs[#specs + 1] = {
                     id = specID, name = spec.name or L("CHARS_NO_SPEC"),
-                    t = spec.t, count = spec.count, filled = spec.filled,
+                    t = spec.t, filled = spec.filled,
                 }
             end
             table.sort(specs, function(a, b) return a.name < b.name end)

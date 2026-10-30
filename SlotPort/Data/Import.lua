@@ -1,7 +1,9 @@
-local L = function(key) return (SlotPortL and SlotPortL[key]) or key end
+-- ============================================================
+-- Import: places the entries of an export string onto the action bars, one
+-- handler per action type, and imports slots plus macros pasted together.
+-- ============================================================
 
-local RANDOM_MOUNT_ID = 268435455   -- "Random Favorite Mount" pseudo mount ID
-local ASSISTED_COMBAT_SPELL_ID = 1229376
+local L = function(key) return (SlotPortL and SlotPortL[key]) or key end
 
 -- ----------------------------------------------------------
 -- Cursor helpers
@@ -144,7 +146,7 @@ HANDLERS.petspell = function(slot, idStr)
 end
 
 HANDLERS.assistedcombat = function(slot, idStr)
-    local assistSpellID = tonumber(idStr) or ASSISTED_COMBAT_SPELL_ID
+    local assistSpellID = tonumber(idStr) or SlotPort.ASSISTED_COMBAT_SPELL_ID
     if C_Spell and C_Spell.PickupSpell then
         C_Spell.PickupSpell(assistSpellID)
         if placeCursor(slot) then return true end
@@ -204,7 +206,7 @@ HANDLERS.summonmount = function(slot, idStr)
     local mountID = tonumber(idStr)
     if not mountID then return nil end
 
-    if mountID == RANDOM_MOUNT_ID then
+    if mountID == SlotPort.RANDOM_MOUNT_ID then
         C_MountJournal.Pickup(0)
         if placeCursor(slot) then return true end
         return nil
@@ -249,14 +251,12 @@ HANDLERS.macro = function(slot, idStr)
     local macroIndex
 
     if macroName:sub(1, 7) == "~body~" then
-        -- Macro was exported by the start of its body (name unavailable)
-        local globalMacros, charMacros = GetNumMacros()
-        local totalMacros = (globalMacros or 0) + (charMacros or 0)
-        local bodyPrefix  = macroName:sub(8)
-        for mi = 1, totalMacros do
-            local _, _, body = GetMacroInfo(mi)
-            if body and body:sub(1, #bodyPrefix) == bodyPrefix then
-                macroIndex = mi
+        -- Macro was exported by the start of its body (name unavailable).
+        -- GetAllMacros covers both index ranges (global 1.., character 121..).
+        local bodyPrefix = macroName:sub(8)
+        for _, m in ipairs(SlotPort:GetAllMacros()) do
+            if m.body:sub(1, #bodyPrefix) == bodyPrefix then
+                macroIndex = m.index
                 break
             end
         end
