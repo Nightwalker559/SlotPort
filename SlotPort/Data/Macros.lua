@@ -53,21 +53,26 @@ end
 -- ----------------------------------------------------------
 -- Export
 -- ----------------------------------------------------------
+-- Exports a list of macro records as returned by GetAllMacros.
+function SlotPort:ExportMacroList(list)
+    local parts = { "SLOTPORTMACRO:v1" }
+    for _, m in ipairs(list) do
+        parts[#parts + 1] = escapeName(m.name) .. ":" .. tostring(m.icon or "") .. ":" .. escapeBody(m.body) .. ":" .. m.scope
+    end
+    local written = #parts - 1
+    if written == 0 then return nil, L("NO_MACROS_SELECTED") end
+    return SlotPort.EncodeForExport(table.concat(parts, "|")), written
+end
+
 function SlotPort:ExportMacros()
     if self:GetSelectedMacroCount() == 0 then
         return nil, L("NO_MACROS_SELECTED")
     end
-    local parts   = { "SLOTPORTMACRO:v1" }
-    local written = 0
+    local list = {}
     for _, m in ipairs(self:GetAllMacros()) do
-        if self.selectedMacros[m.index] then
-            parts[#parts + 1] = escapeName(m.name) .. ":" .. tostring(m.icon or "") .. ":" .. escapeBody(m.body) .. ":" .. m.scope
-            written = written + 1
-        end
+        if self.selectedMacros[m.index] then list[#list + 1] = m end
     end
-    if written == 0 then return nil, L("NO_MACROS_SELECTED") end
-    local raw = table.concat(parts, "|")
-    return SlotPort.EncodeForExport(raw), written
+    return self:ExportMacroList(list)
 end
 
 -- ----------------------------------------------------------
@@ -101,6 +106,7 @@ function SlotPort:ImportMacros(str)
     local imported = 0
     local skipped  = 0
     local errors   = {}
+    local DEFAULT_ICON = "INV_Misc_QuestionMark"
 
     for i = 2, #entries do
         -- Scope tag optional: name:icon:body:g or name:icon:body:c or name:icon:body (legacy)
@@ -120,7 +126,6 @@ function SlotPort:ImportMacros(str)
             -- so they are created with the default question-mark icon (restoring
             -- the exported icon would freeze it). Macros without it keep the icon
             -- the user set manually, so it is restored from the export.
-            local DEFAULT_ICON = "INV_Misc_QuestionMark"
             local icon = DEFAULT_ICON
             local exportedIcon = tonumber(iconStr)
             if exportedIcon and exportedIcon > 0 and not body:lower():find("#show", 1, true) then

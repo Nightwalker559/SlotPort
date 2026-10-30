@@ -1,3 +1,7 @@
+-- ============================================================
+-- SlotPort namespace, bar definitions, event setup and slash commands.
+-- ============================================================
+
 SlotPort = {}
 -- Single source of truth: read the version from the .toc file instead of
 -- maintaining a second hardcoded copy here.
@@ -48,11 +52,9 @@ SlotPort.BARS = {
 -- Addon initialization & slash commands
 -- ----------------------------------------------------------
 
-local defaults = {
-    global = {
-        windowPos = nil,
-    },
-}
+-- SlotPortDB.global holds windowPos, chars (Data/Characters.lua) and
+-- showAllChars (characters page); all are created on first use.
+local defaults = { global = {} }
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
@@ -80,6 +82,7 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
             SlotPort:RefreshBarContent()
             SlotPort:DetectElvUIBars()
             SlotPort:SetupElvUIWatchers()
+            SlotPort:SnapshotCurrentCharacter()
             if SlotPortGUI.mainFrame and SlotPortGUI.mainFrame:IsShown() then
                 SlotPortGUI:RebuildGrid()
             end
