@@ -1,4 +1,4 @@
-## Interface: 120100, 120105
+## Interface: 120100, 120105, 120107
 ## Title: SlotPort
 ## Notes: SlotPort lets you export and import your action bar layouts and macros between characters — as a compact, compressed string you can share or store anywhere.
 ## Author: Nightwalker559
