@@ -15,7 +15,7 @@
 -- exactly like a manual export.
 -- ============================================================
 
-local L = function(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 local SNAPSHOT_DELAY = 5   -- quiet time after the last change before saving
 local NO_SPEC        = 0

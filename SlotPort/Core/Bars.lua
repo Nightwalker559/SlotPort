@@ -3,7 +3,7 @@
 -- and hold content. Selection lives in Selection.lua, ElvUI support in ElvUI.lua.
 -- ============================================================
 
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 -- Frame names of the default Blizzard bars in Midnight 12.0
 -- barNum = math.ceil(startSlot / 12)
@@ -164,7 +164,7 @@ function SlotPort:RefreshBarContent()
     -- paging can point a bar at a different underlying slot per state, so
     -- reading 73-120 directly showed nothing for setups that use that
     -- paging. Strip the static entries once ElvUI is active; DetectElvUIBars
-    -- (below) reads the bar's real button data instead.
+    -- (Core/ElvUI.lua) reads the bar's real button data instead.
     if hasElvUI then
         for i = #self.BARS, 1, -1 do
             if self.BARS[i].isFormBar then

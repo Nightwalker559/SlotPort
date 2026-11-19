@@ -7,7 +7,7 @@
 -- e.g. corrupted round-trips on the native !SP3! codec.
 -- ============================================================
 
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 -- ----------------------------------------------------------
 -- /sp debug

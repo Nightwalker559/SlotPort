@@ -11,6 +11,8 @@ SlotPort.slotButtons   = {}   -- [slotNumber] = Button (populated by UI/GUI.lua)
 
 -- Locale access: read from SlotPortL at runtime (available after ADDON_LOADED)
 local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+-- shared by every file: reads SlotPortL lazily, so locale load order does not matter
+SlotPort.L = L
 
 -- ----------------------------------------------------------
 -- Bar definitions

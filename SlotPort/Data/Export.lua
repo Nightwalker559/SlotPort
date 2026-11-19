@@ -4,7 +4,7 @@
 -- Import.lua and Macros.lua.
 -- ============================================================
 
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 -- Escapes a literal "|" for the export format ("||"); see SlotPort.SplitEntries.
 local function esc(s)
@@ -374,3 +374,16 @@ function SlotPort.DecodeFromExport(str)
     return str
 end
 
+-- Trims an import string and decodes it if it is !SP3!-compressed. Returns the plain
+-- string, or nil plus invalidMsg (with the decoder's reason) on failure.
+function SlotPort.DecodeImportString(str, invalidMsg)
+    str = str:gsub("^%s+", ""):gsub("%s+$", "")
+    if str:sub(1, 5) == "!SP3!" then
+        local decoded, err = SlotPort.DecodeFromExport(str)
+        if not decoded then
+            return nil, invalidMsg .. (err and (" (" .. err .. ")") or "")
+        end
+        str = decoded
+    end
+    return str
+end

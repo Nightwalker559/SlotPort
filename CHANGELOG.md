@@ -6,6 +6,7 @@
 
 ### Changed
 - TOC: added Interface 12.1.7 (120107).
+- Internal cleanup: one shared locale helper and one decoder for import strings, no change in behavior.
 
 ## 1.2.2
 

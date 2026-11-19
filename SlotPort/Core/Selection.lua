@@ -2,7 +2,7 @@
 -- Slot selection and clearing of the selected slots
 -- ============================================================
 
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 -- ----------------------------------------------------------
 -- Slot selection

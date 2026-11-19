@@ -5,7 +5,7 @@
 -- Backwards compat: no scope tag -> character macro
 -- ============================================================
 
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 SlotPort.selectedMacros = {}
 
@@ -86,15 +86,9 @@ function SlotPort:ImportMacros(str)
         return false, L("EMPTY_STRING")
     end
 
-    -- Decode SP3 format if needed
-    str = str:gsub("^%s+", ""):gsub("%s+$", "")
-    if str:sub(1, 5) == "!SP3!" then
-        local decoded, err = SlotPort.DecodeFromExport(str)
-        if not decoded then
-            return false, L("MACRO_INVALID_FORMAT") .. (err and (" (" .. err .. ")") or "")
-        end
-        str = decoded
-    end
+    local plain, err = SlotPort.DecodeImportString(str, L("MACRO_INVALID_FORMAT"))
+    if not plain then return false, err end
+    str = plain
 
     local header = str:match("^%s*([^\n|]+)")
     if header ~= "SLOTPORTMACRO:v1" then

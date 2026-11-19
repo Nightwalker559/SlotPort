@@ -5,7 +5,7 @@
 -- expanded.
 -- ============================================================
 
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 local ui = SlotPort.ui
 local WHITE, C, rgba = ui.WHITE, ui.C, ui.rgba

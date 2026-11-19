@@ -3,7 +3,7 @@
 -- handler per action type, and imports slots plus macros pasted together.
 -- ============================================================
 
-local L = function(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 -- ----------------------------------------------------------
 -- Cursor helpers
@@ -296,15 +296,9 @@ function SlotPort:Import(str)
         return false, L("IN_COMBAT")
     end
 
-    -- Decode SP3 format if needed
-    str = str:gsub("^%s+", ""):gsub("%s+$", "")
-    if str:sub(1, 5) == "!SP3!" then
-        local decoded, err = SlotPort.DecodeFromExport(str)
-        if not decoded then
-            return false, L("INVALID_FORMAT") .. (err and (" (" .. err .. ")") or "")
-        end
-        str = decoded
-    end
+    local plain, err = SlotPort.DecodeImportString(str, L("INVALID_FORMAT"))
+    if not plain then return false, err end
+    str = plain
 
     -- Header check (trim leading whitespace for robustness)
     local header = str:match("^%s*([^\n|]+)")

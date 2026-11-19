@@ -4,7 +4,7 @@
 -- content of ElvUI buttons.
 -- ============================================================
 
-local function L(key) return (SlotPortL and SlotPortL[key]) or key end
+local L = SlotPort.L
 
 local slotRangeHasContent = SlotPort.slotRangeHasContent
 
